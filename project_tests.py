@@ -5,7 +5,12 @@ from glob import glob
 from unittest import mock
 
 import numpy as np
-import tensorflow as tf
+
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+
+    import tensorflow as tf
 
 
 def test_safe(func):
