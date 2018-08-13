@@ -135,12 +135,14 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
         yield os.path.basename(image_file), np.array(street_im)
 
 
-def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image):
+def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag=None):
     # Make folder for current run
-    output_dir = os.path.join(runs_dir, str(time.time()))
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
-    os.makedirs(output_dir)
+    if tag is None: tag = str(time.time())
+    output_dir = os.path.join(runs_dir, tag)
+    try:
+        os.makedirs(output_dir)
+    except FileExistsError:
+        pass
 
     # Run NN on test images and save them to HD
     print('Training Finished. Saving test images to: {}'.format(output_dir))
