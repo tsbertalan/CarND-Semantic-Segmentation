@@ -5,7 +5,7 @@ import os.path
 import os
 import time
 
-L2 = 1e-4
+L2 = 1e-3
 
 # Suppress unneeded tf logging.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -255,7 +255,7 @@ def sanitize(s, alpha=True, ALPHA=True, numbers=True, other='.-_ '):
 
 
 def run():
-    num_classes = 2
+    num_classes = 3
     image_shape = (160, 576)
     data_dir = '/home/tsbertalan/data/'
     runs_dir = './runs'
@@ -316,7 +316,7 @@ def run():
         # Save inference data using helper.save_inference_samples
         output_dir = helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag)
         from os import system
-        system('cp "%s/um_000026.png" ./sample.png' % directory)
+        system('cp "%s/um_000007.png" ./sample.png' % directory)
 
         fig, ax = plt.subplots()
         ax.plot(train_losses)
