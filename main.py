@@ -127,16 +127,20 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
 
     i1x1 = [0]
-    def conv1x1(x, M=num_classes):
+    def conv1x1(x, M=num_classes, init=0.01):
         SCOPENAME = 'conv1x1_%d' % i1x1[0]
         with tf.variable_scope(SCOPENAME):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 i1x1[0] += 1
+                if isinstance(init, float) and init > 0:
+                    init_method = tf.random_normal_initializer(stddev=init)
+                else:
+                    init_method = tf.zeros_initializer()
                 c1x1 = tf.layers.conv2d(
                     x, M, 1, 1, 
                     padding='SAME',
-                    kernel_initializer= tf.random_normal_initializer(stddev=0.01),
+                    kernel_initializer=init_method,
                     kernel_regularizer=tf.contrib.layers.l2_regularizer(L2),
                 )
 
@@ -153,13 +157,13 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     x = upsample(x, 'layer7')
 
     # skip connection (element-wise addition)
-    x = tf.add(x, conv1x1(vgg_layer4_out))
+    x = tf.add(x, conv1x1(vgg_layer4_out, init='zeros'))
 
     # upsample
     x = upsample(x, 'layer3')
 
     # skip connection (element-wise addition)
-    x = tf.add(x, conv1x1(vgg_layer3_out))
+    x = tf.add(x, conv1x1(vgg_layer3_out, init='zeros'))
 
     # upsample
     x = upsample(x, 'nn_last_layer', stride=8)
@@ -215,6 +219,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         update = lambda : None
 
     try:
+        print('cross_entropy_loss shape is', cross_entropy_loss.shape)
         for epoch in range(epochs):
             for image, label in get_batches_fn(batch_size):
                 loss_value = sess.run(
@@ -314,12 +319,12 @@ def run():
         sess.run(tf.global_variables_initializer())
         
         # Train NN using the train_nn function
-        train_losses = train_nn(
+        train_losses = np.array(train_nn(
             sess,
             epochs=25, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
-        )
+        ))
 
         # Save inference data using helper.save_inference_samples
         output_dir = helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag)
@@ -327,6 +332,8 @@ def run():
         import glob
         f = glob.glob('%s/*.png' % directory)[0]
         system('cp "%s" ./sample.png' % f)
+
+        print('Plotting train_losses. Shape=', train_losses.shape)
 
         fig, ax = plt.subplots()
         ax.plot(train_losses)
