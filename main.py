@@ -182,7 +182,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     """
     logits = tf.reshape(nn_last_layer, (-1, num_classes))
     correct_label = tf.reshape(correct_label, (-1, num_classes))
-    cross_entropy_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+    cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits_v2(
         labels=correct_label,
         logits=logits
     )
@@ -322,7 +322,9 @@ def run():
         # Save inference data using helper.save_inference_samples
         output_dir = helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag)
         from os import system
-        system('cp "%s/um_000007.png" ./sample.png' % directory)
+        import glob
+        f = glob.glob('%s/*.png' % directory)[0]
+        system('cp "%s" ./sample.png' % f)
 
         fig, ax = plt.subplots()
         ax.plot(train_losses)
