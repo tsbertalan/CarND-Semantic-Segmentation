@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import warnings
+
 import os.path
 import os
 import time
@@ -11,12 +12,15 @@ with warnings.catch_warnings():
 
     import tensorflow as tf
 
+    import project_tests as tests
+    import helper
+
+    import tfgraphviz as tfg
 import matplotlib.pyplot as plt
 import tqdm
-import helper
 import warnings
 from distutils.version import LooseVersion
-import project_tests as tests
+
 
 
 def load_vgg(sess, vgg_path='vgg16'):
@@ -87,6 +91,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     # 1x1 convolution of vgg layer 7
     x = conv1x1(vgg_layer7_out)
+    #x = conv1x1(x)
 
     # upsample
     x = upsample(x, 'layer4a_in1')
@@ -171,7 +176,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
 
 def graph2pdf(sess, directory, **kw):
-    import tfgraphviz as tfg
+    print('Saving graph PDF in', directory, end=' ... ')
     g = tfg.board(sess.graph, **kw)
     g.render(filename='graph', directory=directory)
 
