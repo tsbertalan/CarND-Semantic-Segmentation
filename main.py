@@ -16,6 +16,9 @@ with warnings.catch_warnings():
     import helper
 
     import tfgraphviz as tfg
+
+import numpy as np
+
 import matplotlib.pyplot as plt
 import tqdm
 import warnings
@@ -55,6 +58,58 @@ def _get_conv2d_transpose_weights(height, width, from_tensor, out_channels):
     return w
 
 
+
+def get_bilinear_filter(filter_shape, upscale_factor):
+    ##filter_shape is [width, height, num_in_channels, num_out_channels]
+    kernel_size = filter_shape[1]
+    ### Centre location of the filter for which value is calculated
+    if kernel_size % 2 == 1:
+        centre_location = upscale_factor - 1
+    else:
+        centre_location = upscale_factor - 0.5
+
+    bilinear = np.zeros([filter_shape[0], filter_shape[1]])
+    for x in range(filter_shape[0]):
+        for y in range(filter_shape[1]):
+            ##Interpolation Calculation
+            value = (1 - abs((x - centre_location)/ upscale_factor)) * (1 - abs((y - centre_location)/ upscale_factor))
+            bilinear[x, y] = value
+    weights = np.zeros(filter_shape)
+    for i in range(filter_shape[2]):
+        weights[:, :, i, i] = bilinear
+    init = tf.constant_initializer(value=weights,
+                                   dtype=tf.float32)
+
+    bilinear_weights = tf.get_variable(name="decon_bilinear_filter", initializer=init,
+                           shape=weights.shape)
+    return bilinear_weights
+
+
+def upsample_layer(bottom, name, n_channels, upscale_factor=2):
+
+    kernel_size = 2*upscale_factor - upscale_factor%2
+    stride = upscale_factor
+    strides = [1, stride, stride, 1]
+    with tf.variable_scope(name + '_upsamp'):
+        # Shape of the bottom tensor
+        in_shape = tf.shape(bottom)
+
+        #h = ((in_shape[1] - 1) * stride) + 1
+        #w = ((in_shape[2] - 1) * stride) + 1
+        h = in_shape[1] * stride
+        w = in_shape[2] * stride
+
+        new_shape = [in_shape[0], h, w, n_channels]
+        output_shape = tf.stack(new_shape)
+
+        filter_shape = [kernel_size, kernel_size, n_channels, n_channels]
+
+        weights = get_bilinear_filter(filter_shape, upscale_factor)
+
+        return tf.nn.conv2d_transpose(bottom, weights, output_shape,
+                                        strides=strides, padding='SAME')
+
+
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
     Create the layers for a fully convolutional network.  Build skip-layers using the vgg layers.
@@ -64,49 +119,44 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
+
     i1x1 = [0]
     def conv1x1(x, M=num_classes):
-        with tf.variable_scope('conv1x1_%d' % i1x1[0]):
-            i1x1[0] += 1
-            return tf.layers.conv2d(
-                x, M, 1, 1, 
-                padding='SAME',
-                kernel_initializer= tf.random_normal_initializer(stddev=0.01),
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
-            )
+        SCOPENAME = 'conv1x1_%d' % i1x1[0]
+        with tf.variable_scope(SCOPENAME):
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                i1x1[0] += 1
+                c1x1 = tf.layers.conv2d(
+                    x, M, 1, 1, 
+                    padding='SAME',
+                    kernel_initializer= tf.random_normal_initializer(stddev=0.01),
+                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                )
 
-    iupsample = [0]
-    def upsample(x, name, M=num_classes, k=4, stride=2):
-        with tf.variable_scope('upsample_%d' % iupsample[0]):
-            iupsample[0] += 1
-            return tf.layers.conv2d_transpose(
-                x,
-                M,
-                k,
-                strides=(stride, stride),
-                padding='SAME',
-                kernel_initializer= tf.random_normal_initializer(stddev=0.01),
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
-            )
+                return c1x1
+
+    def upsample(x, name, M=num_classes, stride=2):
+        return upsample_layer(x, name, M, upscale_factor=stride)
 
     # 1x1 convolution of vgg layer 7
     x = conv1x1(vgg_layer7_out)
     #x = conv1x1(x)
 
     # upsample
-    x = upsample(x, 'layer4a_in1')
+    x = upsample(x, 'layer7')
 
     # skip connection (element-wise addition)
     x = tf.add(x, conv1x1(vgg_layer4_out))
 
     # upsample
-    x = upsample(x, 'layer3a_in1')
+    x = upsample(x, 'layer3')
 
     # skip connection (element-wise addition)
     x = tf.add(x, conv1x1(vgg_layer3_out))
 
     # upsample
-    x = upsample(x, 'nn_last_layer', k=16, stride=8)
+    x = upsample(x, 'nn_last_layer', stride=8)
 
     return x
 
@@ -179,6 +229,7 @@ def graph2pdf(sess, directory, **kw):
     print('Saving graph PDF in', directory, end=' ... ')
     g = tfg.board(sess.graph, **kw)
     g.render(filename='graph', directory=directory)
+    print('done.')
 
 
 def run():
@@ -216,7 +267,7 @@ def run():
         # Save graph picture to file.
         tag = str(time.time())
         directory = os.path.join(runs_dir, tag)
-        graph2pdf(sess, directory, depth=1)
+        graph2pdf(sess, directory, depth=2)
 
         correct_label = tf.placeholder('float32', shape=[None, None, None, num_classes], name='correct_label')
         learning_rate = tf.placeholder('float32', name='learning_rate')
