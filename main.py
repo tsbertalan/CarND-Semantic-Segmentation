@@ -80,8 +80,12 @@ def get_bilinear_filter(filter_shape, upscale_factor):
     init = tf.constant_initializer(value=weights,
                                    dtype=tf.float32)
 
-    bilinear_weights = tf.get_variable(name="decon_bilinear_filter", initializer=init,
-                           shape=weights.shape)
+    bilinear_weights = tf.get_variable(
+        name="decon_bilinear_filter", 
+        initializer=init,
+        shape=weights.shape,
+        regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+    )
     return bilinear_weights
 
 
@@ -232,6 +236,22 @@ def graph2pdf(sess, directory, **kw):
     print('done.')
 
 
+def sanitize(s, alpha=True, ALPHA=True, numbers=True, other='.-_ '):
+    allowed = str(other)
+    alphabet = 'abcdefghijklmnopqrstuvwxyz'
+    if alpha:
+        allowed += alphabet
+    if ALPHA:
+        allowed += alphabet.upper()
+    if numbers:
+        allowed += '0123456789'
+    out = ''
+    for c in s:
+        if c in allowed:
+            out += c
+    return out
+
+
 def run():
     num_classes = 2
     image_shape = (160, 576)
@@ -267,7 +287,14 @@ def run():
         # Save graph picture to file.
         tag = str(time.time())
         directory = os.path.join(runs_dir, tag)
-        graph2pdf(sess, directory, depth=2)
+        graph2pdf(sess, directory, depth=1)
+        import subprocess
+        last_commit_message = subprocess.check_output(r'git log -1 --pretty=%B'.split()).strip()
+        last_commit_hash    = subprocess.check_output(r'git log -1 --pretty=%H'.split()).strip()
+        with open(sanitize('last commit - ' + last_commit_message), 'w') as f:
+            f.write(last_commit_hash + '\n')
+            f.write(last_commit_message + '\n')
+
 
         correct_label = tf.placeholder('float32', shape=[None, None, None, num_classes], name='correct_label')
         learning_rate = tf.placeholder('float32', name='learning_rate')
@@ -279,7 +306,7 @@ def run():
         # Train NN using the train_nn function
         train_losses = train_nn(
             sess,
-            epochs=50, batch_size=8, get_batches_fn=get_batches_fn, 
+            epochs=25, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
         )
