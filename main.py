@@ -5,6 +5,8 @@ import os.path
 import os
 import time
 
+L2 = 1e-4
+
 # Suppress unneeded tf logging.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 with warnings.catch_warnings():
@@ -84,7 +86,7 @@ def get_bilinear_filter(filter_shape, upscale_factor):
         name="decon_bilinear_filter", 
         initializer=init,
         shape=weights.shape,
-        regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+        regularizer=tf.contrib.layers.l2_regularizer(L2),
     )
     return bilinear_weights
 
@@ -135,7 +137,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                     x, M, 1, 1, 
                     padding='SAME',
                     kernel_initializer= tf.random_normal_initializer(stddev=0.01),
-                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                    kernel_regularizer=tf.contrib.layers.l2_regularizer(L2),
                 )
 
                 return c1x1
@@ -289,12 +291,12 @@ def run():
         directory = os.path.join(runs_dir, tag)
         graph2pdf(sess, directory, depth=1)
         import subprocess
-        last_commit_message = subprocess.check_output(r'git log -1 --pretty=%B'.split()).strip()
-        last_commit_hash    = subprocess.check_output(r'git log -1 --pretty=%H'.split()).strip()
-        with open(sanitize('last commit - ' + last_commit_message), 'w') as f:
+        last_commit_message = subprocess.getoutput(r'git log -1 --pretty=%B').strip()
+        last_commit_hash    = subprocess.getoutput(r'git log -1 --pretty=%H').strip()
+        fpath = directory + '/' + sanitize(last_commit_message)
+        with open(fpath, 'w') as f:
             f.write(last_commit_hash + '\n')
             f.write(last_commit_message + '\n')
-
 
         correct_label = tf.placeholder('float32', shape=[None, None, None, num_classes], name='correct_label')
         learning_rate = tf.placeholder('float32', name='learning_rate')
@@ -313,6 +315,8 @@ def run():
 
         # Save inference data using helper.save_inference_samples
         output_dir = helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag)
+        from os import system
+        system('cp "%s/um_000026.png" ./sample.png' % directory)
 
         fig, ax = plt.subplots()
         ax.plot(train_losses)
