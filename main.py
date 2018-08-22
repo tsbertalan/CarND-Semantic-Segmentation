@@ -228,8 +228,9 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                     )[1]
                 results.append(loss_value)
                 update()
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ValueError) as e:
+        print('Caught %s exception.' % (e,))
+
     return results
 # tests.test_train_nn(train_nn)
 
@@ -261,7 +262,7 @@ def sanitize(s, alpha=True, ALPHA=True, numbers=True, other='.-_ '):
 
 
 def run():
-    num_classes = 3
+    num_classes = 2
     image_shape = (160, 576)
     data_dir = '/home/tsbertalan/data/'
     runs_dir = './runs'
@@ -282,6 +283,7 @@ def run():
         get_batches_fn = helper.gen_batch_function(
             os.path.join(data_dir, 'data_road/training'), 
             image_shape,
+            num_classes=num_classes,
             #maxdata=16,
         )
 

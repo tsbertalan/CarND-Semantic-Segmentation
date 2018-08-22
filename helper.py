@@ -58,7 +58,7 @@ def maybe_download_pretrained_vgg(data_dir):
         os.remove(os.path.join(vgg_path, vgg_filename))
 
 
-def gen_batch_function(data_folder, image_shape, maxdata='all'):
+def gen_batch_function(data_folder, image_shape, maxdata='all', num_classes=2):
     """
     Generate function to create batches of training data
     :param data_folder: Path to folder that contains all the datasets
@@ -97,29 +97,32 @@ def gen_batch_function(data_folder, image_shape, maxdata='all'):
                     image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
                     gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
 
-                    # # Binary bg/not-bg classification
-                    # gt_bg = np.all(gt_image == background_color, axis=2)
-                    # gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
-                    # gt_image = np.concatenate((gt_bg, np.invert(gt_bg)), axis=2)
-                    # gt_images.append(gt_image)
+                    if num_classes == 2:
+                        # Binary bg/not-bg classification
+                        gt_bg = np.all(gt_image == background_color, axis=2)
+                        gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
+                        gt_image = np.concatenate((gt_bg, np.invert(gt_bg)), axis=2)
+                        gt_images.append(gt_image)
+                    else:
+                        assert num_classes == 3
 
-                    # Multiple classes.
-                    class_colors = np.array([
-                        [255, 0, 0],  # Red
-                        [255, 0, 255], # Magenta
-                        [0, 0, 0]  # Black
-                    ])
-                    one_hot_image = np.zeros((gt_image.shape[0], gt_image.shape[1], len(class_colors)))
-                    for i in range(gt_image.shape[0]):
-                        for j in range(gt_image.shape[1]):
-                            pixel = gt_image[i, j, :]
-                            disparities = [
-                                np.linalg.norm(pixel - color)
-                                for color in class_colors
-                            ]
-                            closest = np.argmin(disparities)
-                            one_hot_image[i, j, closest] = 1
-                    gt_images.append(one_hot_image.astype(bool))
+                        # Multiple classes.
+                        class_colors = np.array([
+                            [255, 0, 0],  # Red
+                            [255, 0, 255], # Magenta
+                            [0, 0, 0]  # Black
+                        ])
+                        one_hot_image = np.zeros((gt_image.shape[0], gt_image.shape[1], len(class_colors)))
+                        for i in range(gt_image.shape[0]):
+                            for j in range(gt_image.shape[1]):
+                                pixel = gt_image[i, j, :]
+                                disparities = [
+                                    np.linalg.norm(pixel - color)
+                                    for color in class_colors
+                                ]
+                                closest = np.argmin(disparities)
+                                one_hot_image[i, j, closest] = 1
+                        gt_images.append(one_hot_image.astype(bool))
 
                     images.append(image)
 
