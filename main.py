@@ -159,13 +159,13 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     skip_init = 1e-4
 
     # skip connection (element-wise addition)
-    x = tf.add(x, conv1x1(vgg_layer4_out, init=skip_init))
+    x = tf.add(x, conv1x1(vgg_layer4_out * .1, init=skip_init))
 
     # upsample
     x = upsample(x, 'layer3')
 
     # skip connection (element-wise addition)
-    x = tf.add(x, conv1x1(vgg_layer3_out, init=skip_init))
+    x = tf.add(x, conv1x1(vgg_layer3_out * .001, init=skip_init))
 
     # upsample
     x = upsample(x, 'nn_last_layer', stride=8)
