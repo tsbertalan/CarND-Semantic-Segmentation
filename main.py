@@ -151,7 +151,6 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     # 1x1 convolution of vgg layer 7
     x = conv1x1(vgg_layer7_out)
-    x = conv1x1(x)
 
     # upsample
     x = upsample(x, 'layer7')
