@@ -217,7 +217,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
         yield os.path.basename(image_file), np.array(street_im)
 
 
-def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag=None):
+def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag=None, folders=['training', 'testing']):
     from os import system
     # Make folder for current run
     if tag is None: tag = str(time.time())
@@ -230,7 +230,7 @@ def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_p
     # Run NN on test images and save them to HD
     print('Training Finished. Saving test images to: {}'.format(output_dir))
     maxdata = 20
-    for folder in 'training', 'testing':
+    for folder in folders:
         image_outputs = gen_test_output(
             sess, logits, keep_prob, input_image, 
             os.path.join(data_dir, 'data_road', folder), 

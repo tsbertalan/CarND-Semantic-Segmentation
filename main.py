@@ -332,7 +332,9 @@ def run():
         ))
 
         # Save inference data using helper.save_inference_samples
-        output_dir = helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag)
+        output_dir = helper.save_inference_samples(
+            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag
+        )
         from os import system
         import glob
         f = glob.glob('%s/testing/*.png' % directory)[0]
@@ -346,6 +348,10 @@ def run():
         fig.savefig(output_dir + '/losshist.png')
 
         # OPTIONAL: Apply the trained model to a video
+        save_inference_samples(
+            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
+            folders=['video']
+        )
 
 
 if __name__ == '__main__':
