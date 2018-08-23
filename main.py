@@ -156,14 +156,16 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     # upsample
     x = upsample(x, 'layer7')
 
+    skip_init = 1e-4
+
     # skip connection (element-wise addition)
-    x = tf.add(x, conv1x1(vgg_layer4_out, init='zeros'))
+    x = tf.add(x, conv1x1(vgg_layer4_out, init=skip_init))
 
     # upsample
     x = upsample(x, 'layer3')
 
     # skip connection (element-wise addition)
-    x = tf.add(x, conv1x1(vgg_layer3_out, init='zeros'))
+    x = tf.add(x, conv1x1(vgg_layer3_out, init=skip_init))
 
     # upsample
     x = upsample(x, 'nn_last_layer', stride=8)
@@ -186,10 +188,10 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     """
     logits = tf.reshape(nn_last_layer, (-1, num_classes))
     correct_label = tf.reshape(correct_label, (-1, num_classes))
-    cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits_v2(
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(
         labels=correct_label,
         logits=logits
-    )
+    ))
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_loss)
     return logits, train_op, cross_entropy_loss
 # tests.test_optimize(optimize)
