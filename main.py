@@ -197,7 +197,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
 
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate):
+             correct_label, keep_prob, learning_rate, learning_rate_value=1e-3):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -210,6 +210,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param correct_label: TF Placeholder for label images
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
+    :param learning_rate_value: float value of learning rate
     """
     results = []
 
@@ -228,7 +229,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                             input_image: image, 
                             correct_label: label, 
                             keep_prob: .5, 
-                            learning_rate: 1e-3,
+                            learning_rate: learning_rate_value,
                         }
                     )[1]
                 results.append(loss_value)
@@ -324,6 +325,7 @@ def run():
             epochs=25, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
+            learning_rate_value=1e-2
         ))
 
         # Save inference data using helper.save_inference_samples
