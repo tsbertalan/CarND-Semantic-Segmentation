@@ -1,7 +1,7 @@
 import re
 import random
 import numpy as np
-import os.path
+import os, os.path
 import scipy.misc
 import shutil
 import zipfile
@@ -58,7 +58,9 @@ def maybe_download_pretrained_vgg(data_dir):
         os.remove(os.path.join(vgg_path, vgg_filename))
 
 
-def gen_batch_function(data_folder, image_shape, maxdata='all', num_classes=2):
+def gen_batch_function(data_folder, image_shape, 
+    maxdata='all', num_classes=2, 
+    sample_aug_folder=None, num_aug_sample=10):
     """
     Generate function to create batches of training data
     :param data_folder: Path to folder that contains all the datasets
@@ -74,6 +76,58 @@ def gen_batch_function(data_folder, image_shape, maxdata='all', num_classes=2):
 
         def nbatches(self, batch_size):
             return len(range(0, len(self.image_paths), batch_size))
+
+        def augment(self, image, label,
+            aug=.1, flip=.5, noise=.5, noiselevel=.01,
+            rotrange=(-10., 10.), 
+            shiftranges=((-20, 20), (-20, 20))
+            ):
+            import scipy.ndimage.interpolation
+            chk = lambda p: np.random.rand() < p
+
+            # Maybe short-circuit and do nothing?
+            if not chk(aug):
+                return image, label
+
+            # Maybe flip the image.
+            if chk(flip):
+                image = np.fliplr(image)
+                label = np.fliplr(label)
+
+            # Rotate a little or a lot.
+            # Need to use 0-order spline for labels to prevent aliasing phenomenon.
+            angle = np.random.uniform(low=rotrange[0], high=rotrange[1])
+            image = scipy.ndimage.interpolation.rotate(image, angle, reshape=False)
+            label = scipy.ndimage.interpolation.rotate(label, angle, reshape=False, order=0)
+
+            # Shift a little or a lot.
+            # Need to use 0-order spline for labels to prevent aliasing phenomenon.
+            shiftr = np.random.uniform(low=shiftranges[0][0], high=shiftranges[0][1])
+            shiftc = np.random.uniform(low=shiftranges[1][0], high=shiftranges[1][1])
+            image = scipy.ndimage.interpolation.shift(image, [shiftr, shiftc, 0])
+            label = scipy.ndimage.interpolation.shift(label, [shiftr, shiftc, 0], order=0)
+
+            # Maybe add salt-and-PEPPER noise.
+            if chk(noise):
+                x = np.random.uniform(size=image.shape[:2])
+                image[x < noiselevel] = (0, 0, 0)
+                image[x > (1 - noiselevel)] = (255, 255, 255)
+            
+            if not hasattr(self, 'num_sample_aug_saved'): self.num_sample_aug_saved = 0
+            if sample_aug_folder and self.num_sample_aug_saved < num_aug_sample:
+                t = time.time()
+                try:
+                    os.makedirs(sample_aug_folder)
+                except FileExistsError:
+                    pass
+                scipy.misc.imsave(os.path.join(sample_aug_folder, '%s_image.png' % t), 
+                    image)
+                scipy.misc.imsave(os.path.join(sample_aug_folder, '%s_label.png' % t), 
+                    label[:, :, 0].astype('uint8') * 255)
+                self.num_sample_aug_saved += 1
+
+            return image, label
+
 
         def __call__(self, batch_size):
             """
@@ -104,6 +158,7 @@ def gen_batch_function(data_folder, image_shape, maxdata='all', num_classes=2):
                         gt_fg = gt_fg.reshape(*gt_fg.shape, 1)
                         gt_image = np.concatenate((np.invert(gt_fg), gt_fg), axis=2)
                         gt_images.append(gt_image)
+
                     else:
                         assert num_classes == 3
 
@@ -126,6 +181,10 @@ def gen_batch_function(data_folder, image_shape, maxdata='all', num_classes=2):
                         gt_images.append(one_hot_image.astype(bool))
 
                     images.append(image)
+
+                # With small some probability, randomly augment the images.
+                for i in range(len(images)):
+                    images[i], gt_images[i] = self.augment(images[i], gt_images[i])
 
                 yield np.array(images), np.array(gt_images)
     return GetBatchesFn()

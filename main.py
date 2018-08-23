@@ -234,7 +234,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                     )[1]
                 results.append(loss_value)
                 update()
-    except (KeyboardInterrupt, ValueError) as e:
+    except (KeyboardInterrupt) as e:
         print('Caught %s exception.' % (e,))
 
     return results
@@ -283,6 +283,9 @@ def run():
 
     with tf.Session() as sess:
 
+        tag = str(time.time())
+        directory = os.path.join(runs_dir, tag)
+
         # Path to vgg model
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
@@ -291,6 +294,7 @@ def run():
             image_shape,
             num_classes=num_classes,
             #maxdata=16,
+            sample_aug_folder=os.path.join(directory, 'augmented_samples')
         )
 
         # OPTIONAL: Augment Images for better results
@@ -301,9 +305,8 @@ def run():
         layer_output = layers(layer3_out, layer4_out, layer7_out, num_classes)
 
         # Save graph picture to file.
-        tag = str(time.time())
-        directory = os.path.join(runs_dir, tag)
         graph2pdf(sess, directory, depth=1)
+        
         import subprocess
         last_commit_message = subprocess.getoutput(r'git log -1 --pretty=%B').strip()
         last_commit_hash    = subprocess.getoutput(r'git log -1 --pretty=%H').strip()
