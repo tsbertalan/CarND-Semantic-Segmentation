@@ -97,15 +97,15 @@ def gen_batch_function(data_folder, image_shape,
             # Rotate a little or a lot.
             # Need to use 0-order spline for labels to prevent aliasing phenomenon.
             angle = np.random.uniform(low=rotrange[0], high=rotrange[1])
-            image = scipy.ndimage.interpolation.rotate(image, angle, reshape=False)
-            label = scipy.ndimage.interpolation.rotate(label, angle, reshape=False, order=0)
+            image = scipy.ndimage.interpolation.rotate(image, angle, mode='nearest', reshape=False)
+            label = scipy.ndimage.interpolation.rotate(label, angle, mode='nearest', reshape=False, order=0)
 
             # Shift a little or a lot.
             # Need to use 0-order spline for labels to prevent aliasing phenomenon.
             shiftr = np.random.uniform(low=shiftranges[0][0], high=shiftranges[0][1])
             shiftc = np.random.uniform(low=shiftranges[1][0], high=shiftranges[1][1])
-            image = scipy.ndimage.interpolation.shift(image, [shiftr, shiftc, 0])
-            label = scipy.ndimage.interpolation.shift(label, [shiftr, shiftc, 0], order=0)
+            image = scipy.ndimage.interpolation.shift(image, [shiftr, shiftc, 0], mode='nearest',)
+            label = scipy.ndimage.interpolation.shift(label, [shiftr, shiftc, 0], mode='nearest', order=0)
 
             # Maybe add salt-and-PEPPER noise.
             if chk(noise):
@@ -123,7 +123,7 @@ def gen_batch_function(data_folder, image_shape,
                 scipy.misc.imsave(os.path.join(sample_aug_folder, '%s_image.png' % t), 
                     image)
                 scipy.misc.imsave(os.path.join(sample_aug_folder, '%s_label.png' % t), 
-                    label[:, :, 0].astype('uint8') * 255)
+                    label[:, :, 1].astype('uint8') * 255)
                 self.num_sample_aug_saved += 1
 
             return image, label
