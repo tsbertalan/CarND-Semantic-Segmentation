@@ -141,7 +141,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
     :param image_shape: Tuple - Shape of image
     :return: Output for for each test image
     """
-    for image_file in tqdm(glob(os.path.join(data_folder, 'image_2', '*.png'))[:maxdata]):
+    for image_file in glob(os.path.join(data_folder, 'image_2', '*.png'))[:maxdata]:
         image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
 
         im_softmax = sess.run(
@@ -158,6 +158,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
 
 
 def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag=None):
+    from os import system
     # Make folder for current run
     if tag is None: tag = str(time.time())
     output_dir = os.path.join(runs_dir, tag)
@@ -168,8 +169,20 @@ def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_p
 
     # Run NN on test images and save them to HD
     print('Training Finished. Saving test images to: {}'.format(output_dir))
-    image_outputs = gen_test_output(
-        sess, logits, keep_prob, input_image, os.path.join(data_dir, 'data_road/testing'), image_shape)
-    for name, image in image_outputs:
-        scipy.misc.imsave(os.path.join(output_dir, name), image)
+    maxdata = 20
+    for folder in 'training', 'testing':
+        image_outputs = gen_test_output(
+            sess, logits, keep_prob, input_image, 
+            os.path.join(data_dir, 'data_road', folder), 
+            image_shape,
+            maxdata=maxdata
+            )
+        os.makedirs(os.path.join(output_dir, folder))
+        for name, image in tqdm(image_outputs, total=maxdata, desc=folder):
+            if folder == 'training':
+                system('cp  "%s" "%s"' % (
+                    os.path.join(data_dir, 'data_road', folder, 'gt_image_2', name.replace('_', '_road_')),
+                    os.path.join(output_dir, folder, name.replace('.png', '') + '_original.png')
+                ))
+            scipy.misc.imsave(os.path.join(output_dir, folder, name), image)
     return output_dir

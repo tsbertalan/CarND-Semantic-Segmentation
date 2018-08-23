@@ -221,7 +221,6 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         update = lambda : None
 
     try:
-        print('cross_entropy_loss shape is', cross_entropy_loss.shape)
         for epoch in range(epochs):
             for image, label in get_batches_fn(batch_size):
                 loss_value = sess.run(
@@ -332,10 +331,8 @@ def run():
         output_dir = helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag)
         from os import system
         import glob
-        f = glob.glob('%s/*.png' % directory)[0]
+        f = glob.glob('%s/testing/*.png' % directory)[0]
         system('cp "%s" ./sample.png' % f)
-
-        print('Plotting train_losses. Shape=', train_losses.shape)
 
         fig, ax = plt.subplots()
         ax.plot(train_losses)
@@ -343,7 +340,6 @@ def run():
         ax.set_ylabel('loss')
         ax.set_xlabel('batches')
         fig.savefig(output_dir + '/losshist.png')
-
 
         # OPTIONAL: Apply the trained model to a video
 
