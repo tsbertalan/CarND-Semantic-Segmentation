@@ -331,12 +331,17 @@ def run():
             learning_rate_value=1e-4
         ))
 
-        # Save inference data using helper.save_inference_samples
+        # Save inferences
+        from os import system
+        import glob
+
         output_dir = helper.save_inference_samples(
             runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag
         )
-        from os import system
-        import glob
+        
+        system('convert -delay 20 "%s/*.png" anim_large.gif' % os.path.join(output_dir, 'video'), )
+        system(r'convert anim_large.gif -fuzz 10% -layers optimize anim.gif')
+
         f = glob.glob('%s/testing/*.png' % directory)[0]
         system('cp "%s" ./sample.png' % f)
 
@@ -347,11 +352,6 @@ def run():
         ax.set_xlabel('batches')
         fig.savefig(output_dir + '/losshist.png')
 
-        # OPTIONAL: Apply the trained model to a video
-        save_inference_samples(
-            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
-            folders=['video']
-        )
 
 
 if __name__ == '__main__':
