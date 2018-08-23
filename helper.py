@@ -86,6 +86,7 @@ def gen_batch_function(data_folder, image_shape, maxdata='all', num_classes=2):
                 re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
                 for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
             background_color = np.array([255, 0, 0])
+            foreground_color = np.array([255, 0, 255])
 
             random.shuffle(self.image_paths)
             for batch_i in range(0, len(self.image_paths), batch_size):
@@ -99,9 +100,9 @@ def gen_batch_function(data_folder, image_shape, maxdata='all', num_classes=2):
 
                     if num_classes == 2:
                         # Binary bg/not-bg classification
-                        gt_bg = np.all(gt_image == background_color, axis=2)
-                        gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
-                        gt_image = np.concatenate((gt_bg, np.invert(gt_bg)), axis=2)
+                        gt_fg = np.all(gt_image == foreground_color, axis=2)
+                        gt_fg = gt_fg.reshape(*gt_fg.shape, 1)
+                        gt_image = np.concatenate((np.invert(gt_fg), gt_fg), axis=2)
                         gt_images.append(gt_image)
                     else:
                         assert num_classes == 3
