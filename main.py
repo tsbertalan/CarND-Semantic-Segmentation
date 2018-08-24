@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 import warnings
 
-import os.path
-import os
-import time
+import os.path, os, sys, time
 
 L2 = 1e-3
 
@@ -235,14 +233,14 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                 results.append(loss_value)
                 update()
     except (KeyboardInterrupt, ValueError) as e:
-        print('Caught %s exception.' % (e,))
+        print('Caught %s exception: "%s"' % (type(e).__name__, e))
 
     return results
 # tests.test_train_nn(train_nn)
 
 
 def graph2pdf(sess, directory, **kw):
-    print('Saving graph PDF in', directory, end=' ... ')
+    print('Saving graph PDF in', directory, end=' ... '); sys.stdout.flush()
     g = tfg.board(sess.graph, **kw)
     g.render(filename='graph', directory=directory)
     print('done.')
@@ -347,22 +345,29 @@ def run():
                 runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
                 folders=[folder], maxdata=maxdata,
             )
-            system('convert -delay 10 "%s/*.png" /tmp/anim_large-%s.gif' % (
+            large = '/tmp/anim_large-%s.gif' % folder
+            print('Make %s' % large, end=' ... '); sys.stdout.flush()
+            system('convert -delay 10 "%s/*.png" %s' % (
                 os.path.join(output_dir, folder),
-                folder
+                large
                 )
             )
+            print('done.')
 
             if delete_pngs:
-                for png in glob.glob('%s/*.png' % os.path.join(output_dir, folder)):
+                deldir = os.path.join(output_dir, folder)
+                for png in tqdm.tqdm(glob.glob('%s/*.png' % deldir), desc='delete pngs'):
                     os.remove(png)
 
-            system('convert /tmp/anim_large-%s.gif -fuzz 10%% -layers optimize anim-%s.gif' % (
-                folder, folder
+            small = 'anim-%s.gif' % folder
+            print('Make %s' % small, end=' ... '); sys.stdout.flush()
+            system('convert %s -fuzz 10%% -layers optimize %s' % (
+                large, small
                 )
             )
+            print('done.')
             
-            system('cp anim-%s.gif %s/' % (folder, output_dir))
+            system('cp %s %s/' % (small, output_dir))
             
             #system('rm /tmp/anim_large-%s.gif' % folder)
 

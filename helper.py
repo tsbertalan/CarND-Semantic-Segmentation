@@ -9,10 +9,10 @@ import time
 import tensorflow as tf
 from glob import glob
 from urllib.request import urlretrieve
-from tqdm import tqdm
+import tqdm
 
 
-class DLProgress(tqdm):
+class DLProgress(tqdm.tqdm):
     last_block = 0
 
     def hook(self, block_num=1, block_size=1, total_size=None):
@@ -201,8 +201,8 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
     :param image_shape: Tuple - Shape of image
     :return: Output for for each test image
     """
-    results = []
-    for image_file in sorted(glob(os.path.join(data_folder, 'image_2', '*.png')))[:maxdata]:
+    paths = sorted(glob(os.path.join(data_folder, 'image_2', '*.png')))[:maxdata]
+    for image_file in tqdm.tqdm(paths, desc=os.path.basename(os.path.normpath(data_folder))):
         image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
 
         im_softmax = sess.run(
@@ -215,8 +215,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
         street_im = scipy.misc.toimage(image)
         street_im.paste(mask, box=None, mask=mask)
 
-        results.append((os.path.basename(image_file), np.array(street_im)))
-    return results
+        yield os.path.basename(image_file), np.array(street_im)
 
 
 def save_inference_samples(
@@ -241,7 +240,7 @@ def save_inference_samples(
             maxdata=maxdata
             )
         os.makedirs(os.path.join(output_dir, folder))
-        for name, image in tqdm(image_outputs, desc=folder):
+        for name, image in image_outputs:
             if folder == 'training':
                 system('cp  "%s" "%s"' % (
                     os.path.join(data_dir, 'data_road', folder, 'gt_image_2', name.replace('_', '_road_')),
