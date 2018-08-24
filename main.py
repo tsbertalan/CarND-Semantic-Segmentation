@@ -336,12 +336,24 @@ def run():
         import glob
 
         output_dir = helper.save_inference_samples(
-            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag
+            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
+            folders=['training', 'testing']
+        )
+
+        output_dir = helper.save_inference_samples(
+            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
+            folders=['video', 'video2'], maxdata=100,
         )
         
         system('convert -delay 20 "%s/*.png" anim_large.gif' % os.path.join(output_dir, 'video'), )
-        system(r'convert anim_large.gif -fuzz 10% -layers optimize anim.gif')
+        system('rm "%s/*.png"' % os.path.join(output_dir, 'video'))
+        #system(r'convert anim_large.gif -fuzz 10% -layers optimize anim.gif')
         system('rm anim_large.gif')
+
+        system('convert -delay 20 "%s/*.png" anim_large2.gif' % os.path.join(output_dir, 'video2'), )
+        system(r'convert anim_large2.gif -fuzz 10% -layers optimize anim2.gif')
+        #system('rm "%s/*.png"' % os.path.join(output_dir, 'video2'))
+        system('rm anim_large2.gif')
 
         fig, ax = plt.subplots()
         ax.plot(train_losses)

@@ -201,7 +201,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
     :param image_shape: Tuple - Shape of image
     :return: Output for for each test image
     """
-    for image_file in glob(os.path.join(data_folder, 'image_2', '*.png'))[:maxdata]:
+    for image_file in sorted(glob(os.path.join(data_folder, 'image_2', '*.png')))[:maxdata]:
         image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
 
         im_softmax = sess.run(
@@ -219,7 +219,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
 
 def save_inference_samples(
     runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, 
-    tag=None, folders=['training', 'testing', 'video', 'video2']
+    tag=None, folders=['training', 'testing', 'video', 'video2'], maxdata=20,
     ):
     from os import system
     # Make folder for current run
@@ -232,7 +232,6 @@ def save_inference_samples(
 
     # Run NN on test images and save them to HD
     print('Training Finished. Saving test images to: {}'.format(output_dir))
-    maxdata = 20
     for folder in folders:
         image_outputs = gen_test_output(
             sess, logits, keep_prob, input_image, 
