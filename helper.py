@@ -201,6 +201,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
     :param image_shape: Tuple - Shape of image
     :return: Output for for each test image
     """
+    results = []
     for image_file in sorted(glob(os.path.join(data_folder, 'image_2', '*.png')))[:maxdata]:
         image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
 
@@ -214,7 +215,8 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape,
         street_im = scipy.misc.toimage(image)
         street_im.paste(mask, box=None, mask=mask)
 
-        yield os.path.basename(image_file), np.array(street_im)
+        results.append((os.path.basename(image_file), np.array(street_im)))
+    return results
 
 
 def save_inference_samples(
@@ -231,7 +233,6 @@ def save_inference_samples(
         pass
 
     # Run NN on test images and save them to HD
-    print('Training Finished. Saving test images to: {}'.format(output_dir))
     for folder in folders:
         image_outputs = gen_test_output(
             sess, logits, keep_prob, input_image, 
@@ -240,7 +241,7 @@ def save_inference_samples(
             maxdata=maxdata
             )
         os.makedirs(os.path.join(output_dir, folder))
-        for name, image in tqdm(image_outputs, total=maxdata, desc=folder):
+        for name, image in tqdm(image_outputs, desc=folder):
             if folder == 'training':
                 system('cp  "%s" "%s"' % (
                     os.path.join(data_dir, 'data_road', folder, 'gt_image_2', name.replace('_', '_road_')),

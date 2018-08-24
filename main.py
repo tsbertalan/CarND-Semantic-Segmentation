@@ -339,20 +339,23 @@ def run():
             runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
             folders=['training', 'testing']
         )
+        f = glob.glob('%s/testing/*.png' % directory)[0]
+        system('cp "%s" ./sample.png' % f)
 
         def make_gif(folder, delete_pngs=False, maxdata=100):
             output_dir = helper.save_inference_samples(
                 runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
                 folders=[folder], maxdata=maxdata,
             )
-            system('convert -delay 1~0 "%s/*.png" /tmp/anim_large-%s.gif' % (
+            system('convert -delay 10 "%s/*.png" /tmp/anim_large-%s.gif' % (
                 os.path.join(output_dir, folder),
                 folder
                 )
             )
 
             if delete_pngs:
-                system('rm "%s/*.png"' % os.path.join(output_dir, folder))
+                for png in glob.glob('%s/*.png' % os.path.join(output_dir, folder)):
+                    os.remove(png)
 
             system('convert /tmp/anim_large-%s.gif -fuzz 10%% -layers optimize anim-%s.gif' % (
                 folder, folder
@@ -380,9 +383,6 @@ def run():
         ax.set_ylabel('loss')
         ax.set_xlabel('batches')
         fig.savefig(output_dir + '/losshist.png')
-
-        f = glob.glob('%s/testing/*.png' % directory)[0]
-        system('cp "%s" ./sample.png' % f)
         system('cp "%s/losshist.png" ./' % directory)
 
 
