@@ -340,20 +340,39 @@ def run():
             folders=['training', 'testing']
         )
 
-        output_dir = helper.save_inference_samples(
-            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
-            folders=['video', 'video2'], maxdata=100,
-        )
-        
-        system('convert -delay 20 "%s/*.png" anim_large.gif' % os.path.join(output_dir, 'video'), )
-        system('rm "%s/*.png"' % os.path.join(output_dir, 'video'))
-        #system(r'convert anim_large.gif -fuzz 10% -layers optimize anim.gif')
-        system('rm anim_large.gif')
+        def make_gif(folder, delete_pngs=False, maxdata=100):
+            output_dir = helper.save_inference_samples(
+                runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image, tag,
+                folders=[folder], maxdata=maxdata,
+            )
+            system('convert -delay 1~0 "%s/*.png" /tmp/anim_large-%s.gif' % (
+                os.path.join(output_dir, folder),
+                folder
+                )
+            )
 
-        system('convert -delay 20 "%s/*.png" anim_large2.gif' % os.path.join(output_dir, 'video2'), )
-        system(r'convert anim_large2.gif -fuzz 10% -layers optimize anim2.gif')
-        #system('rm "%s/*.png"' % os.path.join(output_dir, 'video2'))
-        system('rm anim_large2.gif')
+            if delete_pngs:
+                system('rm "%s/*.png"' % os.path.join(output_dir, folder))
+
+            system('convert /tmp/anim_large-%s.gif -fuzz 10%% -layers optimize anim-%s.gif' % (
+                folder, folder
+                )
+            )
+            
+            system('cp anim-%s.gif %s/' % (folder, output_dir))
+            
+            #system('rm /tmp/anim_large-%s.gif' % folder)
+
+
+        make_gif('video')
+        for folder in [
+            '2011_09_26_drive_0009_sync',
+            '2011_09_26_drive_0048_sync',
+            '2011_09_26_drive_0051_sync',
+            '2011_09_26_drive_0091_sync',
+            '2011_09_26_drive_0117_sync',
+            ]:
+            make_gif(folder, maxdata=400, delete_pngs=True)
 
         fig, ax = plt.subplots()
         ax.plot(train_losses)
