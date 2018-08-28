@@ -26,7 +26,7 @@ from distutils.version import LooseVersion
 
 
 
-def load_vgg(sess, vgg_path='vgg16'):
+def load_vgg(sess, vgg_path='/home/tsbertalan/data/vgg'):
     """
     Load Pretrained VGG Model into TensorFlow.
     :param sess: TensorFlow Session
@@ -37,16 +37,28 @@ def load_vgg(sess, vgg_path='vgg16'):
     with tf.variable_scope('VGG16'):
         tf.saved_model.loader.load(sess, ['vgg16'], vgg_path)
         graph = tf.get_default_graph()
-    return (
-        graph.get_tensor_by_name('VGG16/image_input:0'),
-        graph.get_tensor_by_name('VGG16/keep_prob:0'),
-        graph.get_tensor_by_name('VGG16/layer3_out:0'),
-        graph.get_tensor_by_name('VGG16/layer4_out:0'),
-        graph.get_tensor_by_name('VGG16/layer7_out:0'),
-    )
+    try:
+        return (
+            graph.get_tensor_by_name('VGG16/image_input:0'),
+            graph.get_tensor_by_name('VGG16/keep_prob:0'),
+            graph.get_tensor_by_name('VGG16/layer3_out:0'),
+            graph.get_tensor_by_name('VGG16/layer4_out:0'),
+            graph.get_tensor_by_name('VGG16/layer7_out:0'),
+        )
+
+    except KeyError:
+        return (
+            graph.get_tensor_by_name('image_input:0'),
+            graph.get_tensor_by_name('keep_prob:0'),
+            graph.get_tensor_by_name('layer3_out:0'),
+            graph.get_tensor_by_name('layer4_out:0'),
+            graph.get_tensor_by_name('layer7_out:0'),
+        )
+
+    exit()
     
     return None, None, None, None, None
-# tests.test_load_vgg(load_vgg, tf)
+tests.test_load_vgg(load_vgg, tf)
 
 
 def _get_conv2d_transpose_weights(height, width, from_tensor, out_channels):
@@ -169,9 +181,9 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     return x
 
-# with warnings.catch_warnings():
-#     warnings.simplefilter('ignore')
-#     tests.test_layers(layers)
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    tests.test_layers(layers)
 
 
 def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
@@ -191,7 +203,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     ))
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_loss)
     return logits, train_op, cross_entropy_loss
-# tests.test_optimize(optimize)
+tests.test_optimize(optimize)
 
 
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
@@ -236,7 +248,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         print('Caught %s exception: "%s"' % (type(e).__name__, e))
 
     return results
-# tests.test_train_nn(train_nn)
+tests.test_train_nn(train_nn)
 
 
 def graph2pdf(sess, directory, **kw):
