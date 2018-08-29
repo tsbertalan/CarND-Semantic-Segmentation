@@ -30,6 +30,16 @@ and
 - The original FCN-8s was trained in stages. The authors later uploaded a version that was trained all at once to their GitHub repo.  The version in the GitHub repo has one important difference: The outputs of pooling layers 3 and 4 are scaled before they are fed into the 1x1 convolutions.  As a result, some students have found that the model learns much better with the scaling layers included. The model may not converge substantially faster, but may reach a higher IoU and accuracy. 
 - When adding l2-regularization, setting a regularizer in the arguments of the `tf.layers` is not enough. Regularization loss terms must be manually added to your loss function. otherwise regularization is not implemented.
 
+## Training Data
+
+The dataset contains images with filenames of the form `*_lane_*` and `*_road_*` -- the former mark just the ego-lane in which the viewpoing car is traveling, while the latter mark the whole drivable surface of the road.
+![Sample image](doc/lane_vs_road/um_000062.png)
+![lane GT](doc/lane_vs_road/um_lane_000062.png)
+![road GT](doc/lane_vs_road/um_road_000062.png)
+To simplify the problem, I used only data of the second form.
+
+Additionally, some parts of the dataset split the GT image into three classes rather than two, being the lane or road on our side of a highway divider, the road on the other side, and other non-road features. At one point, I briefly tried to train such a three-class segmenter, but stopped quickly due to the large increase in trainable parameters and poor initial training results. After this, I merged the opposing-traffic class and the offroad-class into one.
+
 ## Development History
 
 ##### 1. Add first draft FCN decoder.
