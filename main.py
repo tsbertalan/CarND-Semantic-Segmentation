@@ -232,6 +232,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
     try:
         for epoch in range(epochs):
+            epoch_losses = []
             for image, label in get_batches_fn(batch_size):
                 loss_value = sess.run(
                         [train_op, cross_entropy_loss],
@@ -242,8 +243,10 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                             learning_rate: learning_rate_value,
                         }
                     )[1]
+                epoch_losses.append(loss_value)
                 results.append(loss_value)
                 update()
+            print('Epoch %d of %d mean loss:' % (epoch+1, epochs), np.mean(epoch_losses))
     except (KeyboardInterrupt, ValueError) as e:
         print('Caught %s exception: "%s"' % (type(e).__name__, e))
 
