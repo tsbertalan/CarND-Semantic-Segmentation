@@ -101,7 +101,7 @@ def get_bilinear_filter(filter_shape, upscale_factor):
     return bilinear_weights
 
 
-def upsample_layer(bottom, name, n_channels, upscale_factor=2):
+def upsample_layer(bottom, name, n_channels, upscale_factor=2, weight_callback=lambda x: None):
 
     kernel_size = 2*upscale_factor - upscale_factor%2
     stride = upscale_factor
@@ -121,6 +121,7 @@ def upsample_layer(bottom, name, n_channels, upscale_factor=2):
         filter_shape = [kernel_size, kernel_size, n_channels, n_channels]
 
         weights = get_bilinear_filter(filter_shape, upscale_factor)
+        weight_callback(weights)
 
         return tf.nn.conv2d_transpose(bottom, weights, output_shape,
                                         strides=strides, padding='SAME')
@@ -135,6 +136,15 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
+
+    def weight_callback(x):
+        '''Collect l2_loss parts for regularization.
+
+        http://www.godeep.ml/regularization-using-tensorflow/
+        '''
+        if L2:
+            tf.add_to_collection('weight_decay', tf.nn.l2_loss(x) * L2)
+
 
     i1x1 = [0]
     def conv1x1(x, M=num_classes, init=0.01):
@@ -151,13 +161,15 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                     x, M, 1, 1, 
                     padding='SAME',
                     kernel_initializer=init_method,
-                    kernel_regularizer=tf.contrib.layers.l2_regularizer(L2),
+                    # kernel_regularizer=tf.contrib.layers.l2_regularizer(L2),
                 )
+                k = tf.trainable_variables()[-2]
+                weight_callback(k)
 
                 return c1x1
 
     def upsample(x, name, M=num_classes, stride=2):
-        return upsample_layer(x, name, M, upscale_factor=stride)
+        return upsample_layer(x, name, M, upscale_factor=stride, weight_callback=weight_callback)
 
     # 1x1 convolution of vgg layer 7
     x = conv1x1(vgg_layer7_out)
@@ -197,12 +209,16 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     """
     logits = tf.reshape(nn_last_layer, (-1, num_classes))
     correct_label = tf.reshape(correct_label, (-1, num_classes))
-    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(
-        labels=correct_label,
-        logits=logits
-    ))
+    cross_entropy_loss = tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=correct_label,
+            logits=logits
+        )
+    )
+
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_loss)
-    return logits, train_op, cross_entropy_loss
+    weight_decay_losses = tf.get_collection('weight_decay')
+    return logits, train_op, cross_entropy_loss + tf.reduce_mean(weight_decay_losses)
 tests.test_optimize(optimize)
 
 
