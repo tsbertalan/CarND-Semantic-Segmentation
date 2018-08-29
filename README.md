@@ -16,7 +16,7 @@ and
 ### Submission
 ☒ Ensure you've passed all the unit tests.
 
-☐ Ensure you pass all points on [the rubric](https://review.udacity.com/#!/rubrics/989/view).
+☒ Ensure you pass all points on [the rubric](https://review.udacity.com/#!/rubrics/989/view).
 
 ☐ Submit the following in a zip file.
  - `helper.py`
