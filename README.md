@@ -2,6 +2,16 @@
 ## Introduction
 In this project, you'll label the pixels of a road in images using a Fully Convolutional Network (FCN).
 
+![sample classification](sample.png)
+![longer animation](anim-video.gif)
+
+Additionally short videos 
+[here](https://youtu.be/GdW_vgUg1YA),
+[here](https://youtu.be/cZv4Ccd8I8M),
+[here](https://youtu.be/0fpr8EizK7Y),
+and
+[here](https://youtu.be/Uw1aytYEH6E).
+
 
 ### Submission
 ☒ Ensure you've passed all the unit tests.
@@ -27,7 +37,7 @@ In this project, you'll label the pixels of a road in images using a Fully Convo
 ##### 2. First working draft--use SAME padding in upsample.
 
 ##### 3. Save a diagram of the graph to a PDF.
-![network architecture diagram](doc/graph-1535478125.5632854.png)
+[![](doc/graph-1535478125.5632854.png)](doc/graph-1535478125.5632854.pdf "network architecture diagram (click for PDF)")
 
 Requires tfgraphviz:
 https://github.com/akimach/tfgraphviz
@@ -91,8 +101,8 @@ Muuuuch slower.
 
 ##### 25. Add second video folder.
 ![second animation](anim2.gif)
-![longer animation](anim-video.gif)
 
 ##### 27. Make a bunch of videos.
-![anim-2011_09_26_drive_0048_sync](anim-2011_09_26_drive_0048_sync.gif)
-![anim-2011_09_26_drive_0051_sync](anim-2011_09_26_drive_0051_sync.gif)
+![anim-2011_09_26_drive_0048_sync](doc/anim-2011_09_26_drive_0048_sync.gif)
+![anim-2011_09_26_drive_0051_sync](doc/anim-2011_09_26_drive_0051_sync.gif)
+
