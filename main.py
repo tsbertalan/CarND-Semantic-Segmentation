@@ -3,7 +3,7 @@ import warnings
 
 import os.path, os, sys, time
 
-L2 = 5e-3
+L2 = 1e-3
 
 # Suppress unneeded tf logging.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -171,10 +171,6 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     def upsample(x, name, M=num_classes, stride=2):
         return upsample_layer(x, name, M, upscale_factor=stride, weight_callback=weight_callback)
 
-    # Make existing layers untrainable.
-    # for layer in tf.trainable_variables():
-    #     layer.trainable = False
-
     # 1x1 convolution of vgg layer 7
     x = conv1x1(vgg_layer7_out)
 
@@ -220,7 +216,13 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
         )
     )
 
-    train_op = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_loss)
+    non_vgg = [x for x in tf.trainable_variables() if 'VGG16' not in x.name]
+    
+    train_op = tf.train.AdamOptimizer(learning_rate).minimize(
+        cross_entropy_loss,
+        var_list=non_vgg,
+    )
+    
     weight_decay_losses = tf.get_collection('weight_decay')
     return logits, train_op, cross_entropy_loss + tf.reduce_mean(weight_decay_losses)
 tests.test_optimize(optimize)
@@ -358,7 +360,7 @@ def run():
         # Train NN using the train_nn function
         train_losses = np.array(train_nn(
             sess,
-            epochs=100, batch_size=4, get_batches_fn=get_batches_fn, 
+            epochs=50, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
             learning_rate_value=1e-4
