@@ -3,7 +3,7 @@ import warnings
 
 import os.path, os, sys, time
 
-L2 = 1e-3
+L2 = 5e-2
 
 # Suppress unneeded tf logging.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -222,7 +222,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
         cross_entropy_loss,
         var_list=non_vgg,
     )
-    
+
     weight_decay_losses = tf.get_collection('weight_decay')
     return logits, train_op, cross_entropy_loss + tf.reduce_mean(weight_decay_losses)
 tests.test_optimize(optimize)
@@ -406,8 +406,6 @@ def run():
             
             system('cp %s %s/' % (small, output_dir))
             
-            #system('rm /tmp/anim_large-%s.gif' % folder)
-
 
         make_gif('video')
         for folder in [
