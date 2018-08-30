@@ -3,7 +3,7 @@ import warnings
 
 import os.path, os, sys, time
 
-L2 = 1e-3
+L2 = 1e-1
 
 # Suppress unneeded tf logging.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -170,6 +170,10 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     def upsample(x, name, M=num_classes, stride=2):
         return upsample_layer(x, name, M, upscale_factor=stride, weight_callback=weight_callback)
+
+    # Make existing layers untrainable.
+    # for layer in tf.trainable_variables():
+    #     layer.trainable = False
 
     # 1x1 convolution of vgg layer 7
     x = conv1x1(vgg_layer7_out)
