@@ -280,10 +280,13 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                                 learning_rate: learning_rate_value,
                             }
                         )[1]
-                    learning_rate_value *= decay_factor
                     epoch_losses.append(loss_value)
                     results.append(loss_value)
                     update()
+
+                # Decay the learning rate every epoch.
+                learning_rate_value *= decay_factor
+
                 if len(train_op) > 1:
                     label = ' (%s)' % op.name
                 else:
