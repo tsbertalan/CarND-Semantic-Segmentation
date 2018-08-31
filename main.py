@@ -284,9 +284,6 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                     results.append(loss_value)
                     update()
 
-                # Decay the learning rate every epoch.
-                learning_rate_value *= decay_factor
-
                 if len(train_op) > 1:
                     label = ' (%s)' % op.name
                 else:
@@ -296,6 +293,10 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                     np.mean(epoch_losses),
                     '(LR=%E)' % learning_rate_value,
                 )
+
+                # Decay the learning rate every epoch.
+                learning_rate_value *= decay_factor
+                
     except (KeyboardInterrupt, ValueError) as e:
         print('Caught %s exception: "%s"' % (type(e).__name__, e))
 
@@ -393,7 +394,7 @@ def run():
             epochs=50, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=[train_op_incl_vgg16, train_op], cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
-            learning_rate_value=1e-4, decay_factor=.98,
+            learning_rate_value=5e-4, decay_factor=.98,
         ))
 
         # Save inferences
