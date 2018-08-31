@@ -198,7 +198,7 @@ with warnings.catch_warnings():
     tests.test_layers(layers)
 
 
-def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
+def optimize(nn_last_layer, correct_label, learning_rate, num_classes, incl_vgg16=False):
     """
     Build the TensorFLow loss and optimizer operations.
     :param nn_last_layer: TF Tensor of the last layer in the neural network
@@ -222,9 +222,18 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
         cross_entropy_loss,
         var_list=non_vgg,
     )
+    
 
     weight_decay_losses = tf.get_collection('weight_decay')
-    return logits, train_op, cross_entropy_loss + tf.reduce_mean(weight_decay_losses)
+    ops = [logits, train_op, cross_entropy_loss + tf.reduce_mean(weight_decay_losses)]
+
+    if incl_vgg16:
+        train_op_incl_vgg16 = tf.train.AdamOptimizer(learning_rate).minimize(
+            cross_entropy_loss,
+        )
+        ops.append(train_op_incl_vgg16)
+
+    return tuple(ops)
 tests.test_optimize(optimize)
 
 
@@ -236,7 +245,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param epochs: Number of epochs
     :param batch_size: Batch size
     :param get_batches_fn: Function to get batches of training data.  Call using get_batches_fn(batch_size)
-    :param train_op: TF Operation to train the neural network
+    :param train_ops: list of TF Operations to train the neural network. Trained in sequence, `epochs` epochs each.
     :param cross_entropy_loss: TF Tensor for the amount of loss
     :param input_image: TF Placeholder for input images
     :param correct_label: TF Placeholder for label images
@@ -244,31 +253,35 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param learning_rate: TF Placeholder for learning rate
     :param learning_rate_value: float value of learning rate
     """
-    results = []
+    if not isinstance(train_op, list):
+        train_op = [train_op]
+    
 
     try:
-        pbar = tqdm.tqdm(total=epochs*get_batches_fn.nbatches(batch_size))
+        pbar = tqdm.tqdm(total=len(train_op)*epochs*get_batches_fn.nbatches(batch_size))
         update = lambda : pbar.update()
     except AttributeError:
         update = lambda : None
 
     try:
-        for epoch in range(epochs):
-            epoch_losses = []
-            for image, label in get_batches_fn(batch_size):
-                loss_value = sess.run(
-                        [train_op, cross_entropy_loss],
-                        feed_dict={
-                            input_image: image, 
-                            correct_label: label, 
-                            keep_prob: .5, 
-                            learning_rate: learning_rate_value,
-                        }
-                    )[1]
-                epoch_losses.append(loss_value)
-                results.append(loss_value)
-                update()
-            print('Epoch %d of %d mean loss:' % (epoch+1, epochs), np.mean(epoch_losses))
+        results = []
+        for op in train_op:
+            for epoch in range(epochs):
+                epoch_losses = []
+                for image, label in get_batches_fn(batch_size):
+                    loss_value = sess.run(
+                            [op, cross_entropy_loss],
+                            feed_dict={
+                                input_image: image, 
+                                correct_label: label, 
+                                keep_prob: .5, 
+                                learning_rate: learning_rate_value,
+                            }
+                        )[1]
+                    epoch_losses.append(loss_value)
+                    results.append(loss_value)
+                    update()
+                print('Epoch %d of %d mean loss:' % (epoch+1, epochs), np.mean(epoch_losses))
     except (KeyboardInterrupt, ValueError) as e:
         print('Caught %s exception: "%s"' % (type(e).__name__, e))
 
@@ -353,7 +366,10 @@ def run():
         correct_label = tf.placeholder('float32', shape=[None, None, None, num_classes], name='correct_label')
         learning_rate = tf.placeholder('float32', name='learning_rate')
 
-        logits, train_op, cross_entropy_loss = optimize(layer_output, correct_label, learning_rate, num_classes)
+        logits, train_op, cross_entropy_loss, train_op_incl_vgg16 = optimize(
+            layer_output, correct_label, learning_rate, num_classes,
+            incl_vgg16=True
+        )
 
         sess.run(tf.global_variables_initializer())
         
@@ -361,7 +377,7 @@ def run():
         train_losses = np.array(train_nn(
             sess,
             epochs=50, batch_size=4, get_batches_fn=get_batches_fn, 
-            train_op=train_op, cross_entropy_loss=cross_entropy_loss, input_image=input_image,
+            train_op=[train_op, train_op_incl_vgg16], cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
             learning_rate_value=1e-4
         ))
