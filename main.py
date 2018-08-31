@@ -240,7 +240,7 @@ tests.test_optimize(optimize)
 
 
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate, learning_rate_value=1e-3):
+             correct_label, keep_prob, learning_rate, learning_rate_value=1e-3, decay_factor=1.0):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -280,6 +280,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                                 learning_rate: learning_rate_value,
                             }
                         )[1]
+                    learning_rate_value *= decay_factor
                     epoch_losses.append(loss_value)
                     results.append(loss_value)
                     update()
@@ -287,7 +288,11 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                     label = ' (%s)' % op.name
                 else:
                     label = ''
-                print('Epoch %d of %d%s mean loss:' % (epoch+1, epochs, label), np.mean(epoch_losses))
+                print(
+                    'Epoch %d of %d%s mean loss:' % (epoch+1, epochs, label), 
+                    np.mean(epoch_losses),
+                    '(LR=%E)' % learning_rate_value,
+                )
     except (KeyboardInterrupt, ValueError) as e:
         print('Caught %s exception: "%s"' % (type(e).__name__, e))
 
@@ -382,10 +387,10 @@ def run():
         # Train NN using the train_nn function
         train_losses = np.array(train_nn(
             sess,
-            epochs=100, batch_size=4, get_batches_fn=get_batches_fn, 
+            epochs=50, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=[train_op_incl_vgg16, train_op], cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
-            learning_rate_value=1e-4
+            learning_rate_value=1e-4, decay_factor=.96,
         ))
 
         # Save inferences
