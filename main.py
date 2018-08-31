@@ -393,7 +393,7 @@ def run():
             epochs=50, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=[train_op_incl_vgg16, train_op], cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
-            learning_rate_value=1e-4, decay_factor=.96,
+            learning_rate_value=1e-4, decay_factor=.98,
         ))
 
         # Save inferences
