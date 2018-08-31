@@ -382,7 +382,7 @@ def run():
         # Train NN using the train_nn function
         train_losses = np.array(train_nn(
             sess,
-            epochs=50, batch_size=4, get_batches_fn=get_batches_fn, 
+            epochs=100, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=[train_op_incl_vgg16, train_op], cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
             learning_rate_value=1e-4
