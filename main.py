@@ -4,6 +4,8 @@ import warnings
 import os.path, os, sys, time
 
 L2 = 5e-2
+init_lr = 2e-4
+decay = .97
 
 # Suppress unneeded tf logging.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -394,7 +396,7 @@ def run():
             epochs=50, batch_size=4, get_batches_fn=get_batches_fn, 
             train_op=[train_op_incl_vgg16, train_op], cross_entropy_loss=cross_entropy_loss, input_image=input_image,
             correct_label=correct_label, keep_prob=keep_prob, learning_rate=learning_rate,
-            learning_rate_value=5e-4, decay_factor=.98,
+            learning_rate_value=init_lr, decay_factor=decay,
         ))
 
         # Save inferences
