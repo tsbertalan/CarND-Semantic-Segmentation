@@ -313,7 +313,7 @@ def graph2pdf(sess, directory, **kw):
     print('done.')
 
 
-def sanitize(s, alpha=True, ALPHA=True, numbers=True, other='.-_ '):
+def sanitize(s, alpha=True, ALPHA=True, numbers=True, other='-_ '):
     allowed = str(other)
     alphabet = 'abcdefghijklmnopqrstuvwxyz'
     if alpha:

@@ -7,6 +7,7 @@ In this project, you'll label the pixels of a road in images using a Fully Convo
 
 Additionally short videos 
 [here](https://youtu.be/GdW_vgUg1YA),
+
 [here](https://youtu.be/cZv4Ccd8I8M),
 [here](https://youtu.be/0fpr8EizK7Y),
 and
@@ -40,79 +41,94 @@ To simplify the problem, I used only data of the second form.
 
 Additionally, some parts of the dataset split the GT image into three classes rather than two, being the lane or road on our side of a highway divider, the road on the other side, and other non-road features. At one point, I briefly tried to train such a three-class segmenter, but stopped quickly due to the large increase in trainable parameters and poor initial training results. After this, I merged the opposing-traffic class and the offroad-class into one.
 
-## Development History
+## Network Architecture
 
-##### 1. Add first draft FCN decoder.
+The architecture for this project follows Long et al. [1].
 
-##### 2. First working draft--use SAME padding in upsample.
-
-##### 3. Save a diagram of the graph to a PDF.
 [![](doc/graph-1535478125.5632854.png)](doc/graph-1535478125.5632854.pdf "network architecture diagram (click for PDF)")
 
-Requires tfgraphviz:
-https://github.com/akimach/tfgraphviz
+In summary, we remove the fully-connected classifier portion from a pre-trained VGG16 network, take three intermediate feature-map layers from the network of differing sizes (in width, height, and number of channels), and combine these, upscaling as appropriate. Upscaling is performed as a so-called transposed convolution, also know as a fractionally-strided convolution or a deconvolution. Combination is performed with addition, but, per [1], this is equivalent to concatenation of features via the linearity of the convolutions--no ReLU or other nonlinearities are added in this post-VGG16 "decoder" section of the network.
 
-[//]: # (##### 4. Finally ignore that dumb tensorflow warning.)
+The deconvolutions serve to align the feature maps from multiple scales in width and height. However, before combining features by addition, we use a 1x1 convolution to produce our target number-of-features as a linear combination of the 256 or 512 features provided by two different layers of VGG16. This is equivalent to using a fully-connected layer pointwise across the respective feature maps, but ensures that there are no fixed-size layers in the entire network (the network is "fully convolutional"), and the output will always have the same width and height as the input image, allowing us to apply it to images of arbitrary size (above a certain minimum).
 
-##### 5. Initialize upsampling as bilinear interpolation.
+The combination of information from multiply-scaled feature maps is called a "skip connection", in reference to the structure of the figure above. Again, per [1], these skip connections are initialized with an all-zeros 1x1 convolution weight matrix. That is, at start of training, only information from the coarsest level of the VGG16 encoder reaches the output. Additionally, features from higher-resolution layers in the encoder are multiplied by progressively smaller scaling factors before combining with lower-resolution features, to prevent the higher from dominating the lower.
 
-##### 6. Regularize bilinear weights also.
+The upscaling deconvolutions were initialized as bilinear interpolation, though they were permitted to vary during training.
 
-##### 7. Use a smaller L2 regularizer.
+All of these small details, suggested by the Long paper, did not visually add to or detract from the quality of the resulting videos (except for the bilinear interpolation initialization, which helped considerably over Glorot/Xavier initialization). However, one addition that made a really big difference was data augmentation. To help with generalization, I supplemented the training dataset with image inputs corrupted with random horizontal flips, small rotations, small translations, and salt-and-pepper noise (some pixels randomly set to black or white).
 
-##### 8. Switch to `tf.nn.sigmoid_cross_entropy_with_logits`.
-
-Try training to 3 classes.    
-Muuuuch slower.
-
-##### 9. 3aa7c99 Switch to `tf.nn.softmax_cross_entropy_with_logits_v2`.
-![3aa7c99](doc/01-3aa7c99.png)
-
-##### 10. 83546ec Return to 2 classes.
-![83546ec](doc/02-83546ec.png)
-
-##### 11. e43d867 Zero-initialize skip connection 1x1 weights.
-![e43d867](doc/03-e43d867.png)
-
-##### 12. 4c24ced 1e-4 L2 for skip conn.s; reduce_mean for loss.
-![4c24ced](doc/04-4c24ced.png)
-
-##### 13. Add another 1x1 middle layer.
-
-##### 14. Check traning results as well as testing.
-
-##### 15. 96a2f82 Look for foreground, not not background.
-![96a2f82](doc/07-96a2f82.png)
-
-##### 16. c92c873 Scale down higher res skips more.
+Before data agumentation:
 ![c92c873](doc/08-c92c873.png)
 
-##### 17. Remove pointless extra linear conv1x1.
-
-##### 18. d5420cf Increase LR for small batches.
-![d5420cf](doc/10-d5420cf.png)
-
-##### 19. ce62d6c Actually, use a smaller LR.
-![ce62d6c](doc/11-ce62d6c.png)
-
-##### 20. Use flip, rotate, shift, and noise augmentation.
-
-##### 21. Infer on video also.
-
-##### 22. fe5e2e7 Use 'nearest' extension for rotate/shift augmentation.
+After data augmentation:
 ![fe5e2e7](doc/14-fe5e2e7.png)
 
-##### 23. e125e2c Fix video output.
+Besides data augmentation, the only other thing that seemed to provide major improvements in visual quality was long training at a moderate to low learning rate. However, I additionally tried several other tricks, with some small improvement possibly attributed to each. Namely: (1) First, I trained the whole network (VGG16 layers and the new decoder layers), then I restricted the second half of the training to only the decoder layers. (2) I used a learning-rate decay schedule (annealing), where the learning rate decayed exponentially over up to two orders of magnitude during about an hour and a half of training.
+
+
+## Results
+
+For the most part, the network is able to identify drivable space fairly well.
+
+![loss history](doc/losshist.png)
+
 ![animation](anim.gif)
 
-##### 24. 681d02c Copy losshist.png to main dir.
-![681d02c](doc/16-681d02c.png)
-![loss history 681d02c](doc/16-681d02c-losshist.png)
-
-##### 25. Add second video folder.
 ![second animation](anim2.gif)
 
-##### 27. Make a bunch of videos.
 ![anim-2011_09_26_drive_0048_sync](doc/anim-2011_09_26_drive_0048_sync.gif)
+
 ![anim-2011_09_26_drive_0051_sync](doc/anim-2011_09_26_drive_0051_sync.gif)
 
+However, it still has trouble with very high-contrast and sharp shadow edges
+
+
+![anim-2011_09_26_drive_0117_sync](doc/anim-2011_09_26_drive_0117_sync.gif)
+
+and also scenes where I as a human am confused about where exactly to draw the road edge (and so where the human labelers may have been inconsistent as well)
+
+![anim-2011_09_26_drive_0091_sync](doc/anim-2011_09_26_drive_0091_sync.gif)
+
+My next step will be to gather a similar dataset from the point of view of an RC car driving around an office, retrain on this network, and then used this to identify drivable space for a path planner, in a manner similar to the LAGR rover [2,3] developed by Yann LeCun and colleagues at NYU in the previous decade, though I'll have Ackermann kinematics rather than differential drive.
+
+## Some commit messages.
+
+#### Good further changes
+
+    28. Do full training first.
+
+    29. Do twice as many epochs
+
+    30. Decay the learning rate.
+
+    31. Use a less-aggressive decay schedule.
+
+
+
+#### Bad further changes
+
+    Do L<sub>2</sub> regularization manually.
+
+    Try a very small L<sub>2</sub> parameter.
+
+    Try not training the VGG16 layers.
+
+    Try a larger L<sub>2</sub> with frozen VGG16.
+
+    Train first just decoder then whole net
+
+    Decay the learning rate.
+
+    Start with a larger LR.
+
+    Larger LR+smaller (stronger) decay.
+
+
+
+## References
+
+[1] J. Long, E. Shelhamer, and T. Darrell, "Fully convolutional networks for semantic segmentation,"" in Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, 2015, vol. 07-12-June-2015.
+
+[2] ["LAGR: Learning Applied to Ground Robotics"](https://cs.nyu.edu/~yann/research/lagr/#videos)
+
+[3] R. Hadsell et al., ["Online Learning for Offroad Robots: Using Spatial Label Propagation to Learn Long-Range Traversability."](https://cs.nyu.edu/~yann/research/lagr/#papers)
