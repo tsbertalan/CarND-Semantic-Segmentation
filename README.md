@@ -21,7 +21,7 @@ In this project, I label the pixels of a road in images using a Fully Convolutio
  
 ## Training Data
 
-The dataset contains images with filenames of the form `*_lane_*` and `*_road_*` -- the former mark just the ego-lane in which the viewpoing car is traveling, while the latter mark the whole drivable surface of the road.
+The dataset contains ground truth (GT) images with filenames of the form `*_lane_*` and `*_road_*` -- the former mark just the ego-lane in which the viewpoing car is traveling, while the latter mark the whole drivable surface of the road.
 ![Sample image](doc/lane_vs_road/um_000062.png)
 ![lane GT](doc/lane_vs_road/um_lane_000062.png)
 ![road GT](doc/lane_vs_road/um_road_000062.png)
