@@ -3,9 +3,9 @@ import warnings
 
 import os.path, os, sys, time
 
-L2 = 5e-2
+L2 = 5e-3
 init_lr = 2e-4
-decay = .97
+decay = .98
 
 # Suppress unneeded tf logging.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
