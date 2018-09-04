@@ -1,5 +1,5 @@
 # Semantic Segmentation
-## Introduction
+
 In this project, I label the pixels of a road in images using a Fully Convolutional Network (FCN) [1].
 (Click animated GIFs for Youtube versions.)
 
@@ -7,17 +7,6 @@ In this project, I label the pixels of a road in images using a Fully Convolutio
 
 [![longer animation](anim-video.gif)](https://youtu.be/Lhf-_3QTLjo)
 
-
-## Submission
-☒ Ensure you've passed all the unit tests.
-
-☒ Ensure you pass all points on [the rubric](https://review.udacity.com/#!/rubrics/989/view).
-
-☐ Submit the following in a zip file.
- - `helper.py`
- - `main.py`
- - `project_tests.py`
- - Newest inference images from `runs` folder  (**all images from the most recent run**)
  
 ## Training Data
 
@@ -28,6 +17,7 @@ The dataset contains ground truth (GT) images with filenames of the form `*_lane
 To simplify the problem, I used only data of the second form.
 
 Additionally, some parts of the dataset split the GT image into three classes rather than two, being the lane or road on our side of a highway divider, the road on the other side, and other non-road features. At one point, I briefly tried to train such a three-class segmenter, but stopped quickly due to the large increase in trainable parameters and poor initial training results. After this, I merged the opposing-traffic class and the offroad-class into one.
+
 
 ## Network Architecture
 
@@ -76,6 +66,7 @@ and also scenes where I as a human am confused about where exactly to draw the r
 [![anim-2011_09_26_drive_0091_sync](doc/anim-2011_09_26_drive_0091_sync.gif)](https://youtu.be/R2L5je8H5nM)
 
 My next step will be to gather a similar dataset from the point of view of an RC car driving around an office, retrain on this network, and then used this to identify drivable space for a path planner, in a manner similar to the LAGR rover [2,3] developed by Yann LeCun and colleagues at NYU in the previous decade, though I'll have Ackermann kinematics rather than differential drive.
+
 
 ## References
 
