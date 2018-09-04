@@ -3,7 +3,7 @@ import warnings
 
 import os.path, os, sys, time
 
-L2 = 5e-3
+L2 = 5e-4
 init_lr = 2e-4
 decay = .98
 
